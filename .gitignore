@@ -67,3 +67,7 @@ web/fileTicket
 /jupyter
 /scheduler_files
 /test_per
+
+web/assets/*/
+!web/assets/index.php
+runtime/

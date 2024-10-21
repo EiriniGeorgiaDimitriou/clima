@@ -23,7 +23,7 @@ use app\models\EmailEventsModerator;
  * @property int $cores
  * @property string $image
  * @property int $image_id
- * @property string $participant_view 
+ * @property string $participant_view
  * @property int $participants_number
  */
 class JupyterRequestNew extends \yii\db\ActiveRecord
@@ -56,7 +56,7 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
 
         $this->limits=JupyterLimits::find()->where(['user_type'=>$this->role])->one();
 
-        
+
 
     }
 
@@ -80,7 +80,7 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
             [['ram'], 'number'],
             [['participants_number'], 'integer','max'=>$this->limits->participants,'min'=>0],
             [['description','cores','ram',
-             'image', 'participants_number'],'required'],
+                'image', 'participants_number'],'required'],
             // [['description','num_of_jobs','cores','ram',
             // 'analysis_type','maturity'],'required'],
 
@@ -88,8 +88,8 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
         ];
     }
 
-   
-    
+
+
 
 
 
@@ -102,19 +102,19 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
 
 
         $autoaccept=JupyterAutoaccept::find()->where(['user_type'=>$this->role])->one();
-        
+
 
         $maxram=$this->limits->ram;
         $autoacceptram=$autoaccept->ram;
 
         $maxcores=$this->limits->cores;
         $autoacceptcores=$autoaccept->cores;
-        
+
         $maxjobs=$this->limits->num_of_jobs;
         $autoacceptjobs=$autoaccept->num_of_jobs;
-        
 
-        
+
+
 
 
 
@@ -122,7 +122,7 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
             'id' => 'ID',
             'request_id' => 'Request ID',
             'description' => 'Description *',
-            'containerized' => 'Project codes are based on containers',                                                
+            'containerized' => 'Project codes are based on containers',
             'ram' => "",
             'cores' => "",
             'image' => 'Jupyter server type *',
@@ -141,33 +141,33 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
         $errors='';
         $success='';
         $warnings='';
-        
+
 
         Yii::$app->db->createCommand()->insert('jupyter_request_n', [
 
-                'description' => $this->description,
-                'containerized' => $this->containerized,
-                'ram' => $this->ram,
-                'cores' => $this->cores,
-                'additional_resources'=>$this->additional_resources,
-                'request_id' => $requestId,
-                'image' => $this->image,
-                'image_id' => $this->image_id,
-                'participants_number' => $this->participants_number,
-                'participant_view' => $this->participant_view
+            'description' => $this->description,
+            'containerized' => $this->containerized,
+            'ram' => $this->ram,
+            'cores' => $this->cores,
+            'additional_resources'=>$this->additional_resources,
+            'request_id' => $requestId,
+            'image' => $this->image,
+            'image_id' => $this->image_id,
+            'participants_number' => $this->participants_number,
+            'participant_view' => $this->participant_view
 
-            ])->execute();
+        ])->execute();
 
 
-        
+
 
 
 
         $query= new Query;
         $query->select(['ram','cores'])
-              ->from('jupyter_autoaccept')
-              ->where(['user_type'=>$this->role]);
-         
+            ->from('jupyter_autoaccept')
+            ->where(['user_type'=>$this->role]);
+
         $row=$query->one();
 
         // $autoaccepted_num=Project::find()->where(['status'=>2,'project_type'=>0])->count();
@@ -181,7 +181,7 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
         $request=ProjectRequest::find()->where(['id'=>$requestId])->one();
         $project=Project::find()->where(['id'=>$request->project_id])->one();
 
-        
+
 
         $message_autoaccept='';
         $message_autoaccept_mod = '';
@@ -192,18 +192,18 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
             $request->approval_date='NOW()';
             $request->approved_by=0;
             $request->save(false);
-            
-            
-            $message="Project '$request->name' has been automatically approved.";
-            
 
-            foreach ($request->user_list as $user) 
+
+            $message="Project '$request->name' has been automatically approved.";
+
+
+            foreach ($request->user_list as $user)
             {
-                
+
                 Notification::notify($user,$message,2,Url::to(['project/user-request-list','filter'=>'auto-approved']));
                 // Notification::notify($user,$message,2,Url::to(['project/user-request-list','filter'=>'approved']));
             }
-            
+
             $project->latest_project_request_id=$request->id;
             $project->pending_request_id=null;
             $project->status=2;
@@ -211,7 +211,7 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
             $project->save(false);
             $username = User::returnUsernameById($request->submitted_by);
 
-            $message_autoaccept="We are happy to inform you that your project '$project->name' has been automatically approved. <br /> You can access the project resources via the " . Yii::$app->params['name'] . " website"; 
+            $message_autoaccept="We are happy to inform you that your project '$project->name' has been automatically approved. <br /> You can access the project resources via the " . Yii::$app->params['name'] . " website";
             // $message_autoaccept_mod="We would like to inform you that the On-demand computation project '$project->name', submitted by user $username, has been automatically approved.";
             $message_autoaccept_mod="We would like to inform you that the On-demand notebooks project '$project->name', submitted by user $username, has been automatically approved.";
 
@@ -222,10 +222,10 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
             $warnings='Your request will be reviewed.';
         }
 
-            
+
 
         $success='Successfully added project request!';
-    
+
         return [$errors,$success,$warnings,$message_autoaccept,$project->id, $message_autoaccept_mod];
     }
 
@@ -234,32 +234,32 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
         $errors='';
         $success='';
         $warnings='';
-        
+
 
         Yii::$app->db->createCommand()->insert('jupyter_request_n', [
 
-                'description' => $this->description,
-                'containerized' => $this->containerized,
-                'ram' => $this->ram,
-                'cores' => $this->cores,
-                'additional_resources'=>$this->additional_resources,
-                'request_id' => $requestId,
-                'image' => $this->image,
-                'image_id' => $this->image_id,
-                'participants_number' => $this->participants_number,
-                'participant_view' => $this->participant_view
-            ])->execute();
+            'description' => $this->description,
+            'containerized' => $this->containerized,
+            'ram' => $this->ram,
+            'cores' => $this->cores,
+            'additional_resources'=>$this->additional_resources,
+            'request_id' => $requestId,
+            'image' => $this->image,
+            'image_id' => $this->image_id,
+            'participants_number' => $this->participants_number,
+            'participant_view' => $this->participant_view
+        ])->execute();
 
 
-        
+
 
 
 
         $query= new Query;
         $query->select(['ram','cores'])
-              ->from('jupyter_autoaccept')
-              ->where(['user_type'=>$this->role]);
-         
+            ->from('jupyter_autoaccept')
+            ->where(['user_type'=>$this->role]);
+
         $row=$query->one();
 
         // $autoaccepted_num=Project::find()->where(['status'=>2,'project_type'=>0])->count();
@@ -268,7 +268,7 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
         $jupyter_autoaccept_number=$jupyter_autoaccept->autoaccept_number;
         //add a new project type for jupyter notebooks
         $autoaccepted_num=ProjectRequest::find()->where(['status'=>2,'project_type'=>4,'submitted_by'=>Userw::getCurrentUser()['id'],])->andWhere(['>=','end_date', date("Y-m-d")])->count();
-        $autoaccept_allowed=($autoaccepted_num-$jupyter_autoaccept_number < 0) ? 0 :1; 
+        $autoaccept_allowed=($autoaccepted_num-$jupyter_autoaccept_number < 0) ? 0 :1;
 
 
         //get project request and project
@@ -285,12 +285,12 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
                 $server->stopServer();
             }
 
-         }
+        }
 
 
         if (((($this->cores<=$row['cores']) && ($this->ram <=$row['ram']) && ( $autoaccept_allowed)) || $uchanged))
         {
-            
+
             //when autoapproved change the active servers end date
 
             $all_servers=JupyterServer::find()->where(['active'=>true,'project'=>$request->name])->all();
@@ -302,11 +302,11 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
             }
 
 
-            
-            $message="Updates to project '$request->name' have been automatically approved.";
-            
 
-            foreach ($request->user_list as $user) 
+            $message="Updates to project '$request->name' have been automatically approved.";
+
+
+            foreach ($request->user_list as $user)
             {
                 Notification::notify($user,$message,2,Url::to(['project/user-request-list','filter'=>'auto-approved']));
                 // Notification::notify($user,$message,2,Url::to(['project/user-request-list','filter'=>'approved']));
@@ -328,7 +328,7 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
                 $old_request->status=-3;
                 $old_request->save(false);
             }
-            
+
             $project->latest_project_request_id=$request->id;
             $project->pending_request_id=null;
             $project->status=$old_request->status;
@@ -347,10 +347,10 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
             EmailEventsModerator::NotifyByEmail('edit_project', $project_id,$message);
         }
 
-            
+
 
         $success="Successfully modified project '$request->name'.";
-    
+
         return [$errors,$success,$warnings];
     }
 
@@ -375,12 +375,12 @@ class JupyterRequestNew extends \yii\db\ActiveRecord
         return $diff;
     }
 
-    public function GetProjectQuotas($pid) {
+    public static function GetProjectQuotas($pid) {
         $query=new Query;
         $query->select(['jup.ram','jup.cores','jup.description','jup.request_id', 'jup.image', 'jup.participant_view'])
-              ->from('project as p')
-              ->innerJoin('jupyter_request_n as jup','jup.request_id=p.latest_project_request_id')
-              ->where(['=', 'p.id', $pid]);
+            ->from('project as p')
+            ->innerJoin('jupyter_request_n as jup','jup.request_id=p.latest_project_request_id')
+            ->where(['=', 'p.id', $pid]);
         $result = $query->one();
         return $result;
     }

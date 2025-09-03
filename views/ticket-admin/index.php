@@ -1,148 +1,216 @@
 <?php
-/** @var \ricco\ticket\models\TicketHead $dataProvider */
 use app\models\TicketHead;
 use app\models\TicketBody;
-$u=1;
+use yii\bootstrap4\ButtonDropdown;
+use yii\grid\GridView;
+use yii\helpers\Html;
+use yii\helpers\Url;
+
+/** @var yii\data\ActiveDataProvider $dataProvider */
+/** @var app\models\TicketHeadSearch $searchModel */
+
+$statusFilter = [
+    TicketHead::OPEN   => 'Open',
+    TicketHead::WAIT   => 'Waiting',
+    TicketHead::ANSWER => 'Answered',
+    TicketHead::CLOSED => 'Closed',
+];
+
+
+$badgeMap = [
+    TicketHead::OPEN   => ['text' => 'Open',     'class' => 'badge-open'],
+    TicketHead::WAIT   => ['text' => 'Waiting',  'class' => 'badge-waiting'],
+    TicketHead::ANSWER => ['text' => 'Answered', 'class' => 'badge-answered'],
+    TicketHead::CLOSED => ['text' => 'Closed',   'class' => 'badge-closed'],
+    TicketHead::VIEWED => ['text' => 'Unknown',   'class' => 'badge-unknown'],
+];
+$this->registerCss(<<<CSS
+.badge-open     { background:#007bff !important; color:#fff !important; } /* blue */
+.badge-waiting  { background:#fd7e14 !important; color:#fff !important; } /* orange */
+.badge-answered { background:#28a745 !important; color:#fff !important; } /* green */
+.badge-closed   { background:#dc3545 !important; color:#fff !important; } /* red */
+.badge-unknown  { background:#ffc107 !important; color:#ffff !important; } /* yellow */
+.badge-pill { border-radius:10rem; padding:.35em .6em; font-weight:600; }
+CSS);
 ?>
-
 <div class="panel page-block">
-    <div class="container-fluid row">
-    <div class="col-md-1">
-            <a href="<?= \yii\helpers\Url::toRoute(['ticket-admin/open']) ?>" class="btn btn-primary" style="margin-bottom: 15px; margin-left:15px;">Open new ticket</a></div>
-    <br><br>
-    <div class="container-fluid">
-        <div class="col-lg-12">
-            <?= \yii\grid\GridView::widget([
-                'dataProvider' => $dataProvider,
-                'rowOptions'   => function ($model) {
-                    $background = '';
-                    if ($model->status == 0 || $model->status == 1) {
-                        $background = 'background:#E6E6FA';
-                    }
-                    return [
-                        'style'   => "c" . $background,
-                    ];
-                },
-                'columns'      => [
-                    [
-                        'attribute' => 'userName',
-                        //$user = 'userName.username',
-                        'value'     => function($model){
-                            $user = $model['userName'];
-                            return explode('@',$user->username)[0];
-                        }
-                    ],
-                    [
-                        'attribute' => 'department',
-                        'format' => 'text',
-                        'label' => 'Ticket category',
-                    ],
-                    [
-                        'attribute' => 'topic',
-                        'format' => 'text',
-                        'label' => 'Ticket subject',
-                    ],
-                    [
-                        
-                        'enableSorting' => true,
-                        'format' => 'integer',
-                        'label' => 'No of answers',
-                        'value' => function($model){
-                            $tickets = TicketBody::find()->where(['id_head' => $model['id']])->joinWith('file')->asArray()->orderBy('date DESC')->all();
-                            $answers = 0;
-                            foreach ($tickets as $t){
-                                $who = $t['client'] == 1 ? 'Administrator' : 'User';
-                                if ($who == 'Administrator'){
-                                    $answers++;
-                                }
-                            }
-                            if (count($tickets) == $answers) {
-                                $answers-- ;
-                            }
-                            return $answers;
-                        },
-                    ],
-                    [
-                        'attribute' => 'status',
-                        'value'     => function ($model) {
-                            switch ($model->body['client']) {
-                                case 0 :
-                                    if ($model->status == TicketHead::CLOSED) {
-                                        return '<div class="label label-success">User</div>&nbsp;<div class="label label-default">Closed</div>';
-                                    }
-
-                                    return '<div class="label label-success">User</div>';
-                                case 1 :
-                                    if ($model->status == TicketHead::CLOSED) {
-                                        return '<div class="label label-primary">Administrator</div>&nbsp;<div class="label label-default">Closed</div>';
-                                    }
-
-                                    return '<div class="label label-primary">Open</div>';
-                            }
-                        },
-                        'format'    => 'html',
-                    ],
-                    [
-                        'attribute' => 'date_update',
-                        'value'     => 'date_update',
-                    ],
-                    [
-                        'class'         => 'yii\grid\ActionColumn',
-                        'template'      => '{update}&nbsp;{delete}&nbsp;{closed}&nbsp;{reopen}',
-                        'headerOptions' => [
-                            'style' => 'width:230px',
-                        ],
-                        'buttons'       => [
-                            'update' => function ($url, $model) {
-                                return \yii\helpers\Html::a('Answer',
-                                    \yii\helpers\Url::toRoute(['/ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'mode' => 0, 'id' => $model['id']]),
-                                    ['class' => 'btn-xs btn-info']);
-                            },
-                            'delete' => function ($url, $model) {
-                                return \yii\helpers\Html::a('Delete',
-                                    \yii\helpers\Url::to(['/ticket-admin/delete', 'id' => $model['id']]),
-                                    [
-                                        'class'   => 'btn-xs btn-danger',
-                                        'onclick' => 'return confirm("Are you sure you want to delete the ticket?")',
-                                    ]
-                                );
-                            },
-                            'closed' => function ($url, $model) {
-                                return \yii\helpers\Html::a('Close',
-                                    \yii\helpers\Url::to(['/ticket-admin/closed', 'id' => $model['id']]),
-                                    [
-                                        'class'   => 'btn-xs btn-dark',
-                                        'onclick' => 'return confirm("Are you sure you want to close the ticket?")',
-                                    ]
-                                );
-                            },
-                            'reopen' => function ($url, $model) {
-                                return \yii\helpers\Html::a('Re-open',
-                                    \yii\helpers\Url::to(['ticket-admin/reopen', 'id' => $model['id']]),
-                                    [
-                                        'class'   => 'btn-xs btn-warning',
-                                        'onclick' => 'return confirm("Are you sure you want to re-open the ticket?")',
-                                    ]
-                                );
-                            },
-                        ],
-                    ],
-                    [
-                        'class'         => 'yii\grid\ActionColumn',
-                        'template'      => '{view}&nbsp',
-                        'headerOptions' => [
-                            'style' => 'width:230px',
-                        ],
-                        'buttons'       => [
-                            'view' => function ($url, $model) {
-                                return \yii\helpers\Html::a('View',
-                                    \yii\helpers\Url::toRoute(['/ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'id' => $model['id'], 'mode' => 1]),
-                                    ['class' => 'btn-xs btn-primary']);
-                            },
-                        ]   
-                    ]
-                ],
-            ]) ?>
+    <div class="row mb-3">
+        <div class="col-md-2">
+            <?= Html::a('Open new ticket', ['ticket-admin/open'], ['class' => 'btn btn-primary']) ?>
         </div>
     </div>
-</div></div>
+
+    <?= GridView::widget([
+        'dataProvider' => $dataProvider,
+        'filterModel'  => $searchModel,
+        'tableOptions' => ['class' => 'table table-striped table-bordered'],
+        'summary'      => 'Showing <b>{begin}-{end}</b> of <b>{totalCount}</b> items.',
+        'rowOptions' => static function ($model) {
+            return [
+                'data-href' => Url::to(['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'id' => $model->id, 'mode' => 1]),
+                'class' => 'grid-row',
+                'style' => 'cursor:pointer', // no background color
+            ];
+        },
+
+        'columns' => [
+            [
+                'attribute' => 'username',
+                'label'     => 'Username',
+                'format'    => 'raw',
+                'value'     => static function ($m) {
+                    $u = $m->userName ? $m->userName->username : '';
+                    return Html::tag('strong', Html::encode(explode('@', (string)$u)[0]));
+                },
+                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
+            ],
+            [
+                'attribute' => 'department',
+                'label'     => 'Ticket category',
+                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
+            ],
+            [
+                'attribute' => 'topic',
+                'label'     => 'Ticket subject',
+                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
+            ],
+            [
+                'label' => 'No of answers',
+                'value' => static function ($model) {
+                    $tickets = TicketBody::find()
+                        ->where(['id_head' => $model->id])
+                        ->joinWith('file')
+                        ->orderBy(['date' => SORT_DESC])
+                        ->asArray()
+                        ->all();
+
+                    $answers = 0;
+                    foreach ($tickets as $t) {
+                        if ((int)$t['client'] === 1) { // Administrator
+                            $answers++;
+                        }
+                    }
+                    if (count($tickets) === $answers) {
+                        $answers--;
+                    }
+                    return max($answers, 0);
+                },
+                'contentOptions' => ['class' => 'text-center'],
+                'headerOptions'  => ['style' => 'width:140px'],
+                'filter'         => false,
+            ],
+            [
+                'attribute' => 'status',
+                'label'     => 'Status',
+                'format'    => 'raw',
+                'value'     => function ($model) use ($badgeMap) {
+                    $s = is_numeric($model->status) ? (int)$model->status : null;
+                    $conf = $badgeMap[$s] ?? ['text' => 'Unknown', 'class' => 'badge-unknown']; // <- yellow fallback
+                    return \yii\helpers\Html::tag('span', $conf['text'], [
+                        'class' => 'badge badge-pill ' . $conf['class'],
+                    ]);
+                },
+                'filter' => \yii\helpers\Html::activeDropDownList(
+                    $searchModel,
+                    'status',
+                    [
+                        TicketHead::OPEN   => 'Open',
+                        TicketHead::WAIT   => 'Waiting',
+                        TicketHead::ANSWER => 'Answered',
+                        TicketHead::CLOSED => 'Closed',
+                        TicketHead::VIEWED => 'Unknown',
+                    ],
+                    ['class' => 'form-control', 'prompt' => '']
+                ),
+                'contentOptions' => ['class' => 'text-center'],
+                'headerOptions'  => ['style' => 'width:160px'],
+            ],
+
+
+
+
+            [
+                'attribute' => 'date_update',
+                'label'     => 'Last updated',
+                'format'    => ['datetime', 'php:Y-m-d H:i'],
+                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
+                'headerOptions' => ['style' => 'width:180px'],
+                'contentOptions' => ['class' => 'text-center'],
+            ],
+            [
+                'class' => 'yii\grid\ActionColumn',
+                'template' => '{actions}',
+                'header' => 'Actions',
+                'contentOptions' => ['class' => 'text-center'],
+                'buttons' => [
+                    'actions' => static function ($url, $model) {
+                        $items = [
+                            [
+                                'label' => 'View',
+                                'url'   => ['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'id' => $model->id, 'mode' => 1],
+                                'linkOptions' => ['class' => 'dropdown-item no-row-click'],
+                            ],
+                            [
+                                'label' => 'Answer',
+                                'url'   => ['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'mode' => 0, 'id' => $model->id],
+                                'linkOptions' => ['class' => 'dropdown-item no-row-click'],
+                            ],
+                        ];
+
+                        if ((int)$model->status === TicketHead::CLOSED) {
+                            $items[] = [
+                                'label' => 'Re-open',
+                                'url'   => ['ticket-admin/reopen', 'id' => $model->id],
+                                'linkOptions' => [
+                                    'class' => 'dropdown-item text-warning no-row-click',
+                                    'data-confirm' => 'Are you sure you want to re-open the ticket?',
+                                ],
+                            ];
+                        } else {
+                            $items[] = [
+                                'label' => 'Close',
+                                'url'   => ['ticket-admin/closed', 'id' => $model->id],
+                                'linkOptions' => [
+                                    'class' => 'dropdown-item no-row-click',
+                                    'data-confirm' => 'Are you sure you want to close the ticket?',
+                                ],
+                            ];
+                        }
+
+                        $items[] = [
+                            'label' => 'Delete',
+                            'url'   => ['ticket-admin/delete', 'id' => $model->id],
+                            'linkOptions' => [
+                                'class' => 'dropdown-item text-danger no-row-click',
+                                'data-confirm' => 'Are you sure you want to delete the ticket?',
+                            ],
+                        ];
+
+                        return ButtonDropdown::widget([
+                            'label' => 'Actions',
+                            'options' => ['class' => 'btn btn-sm btn-outline-primary no-row-click'],
+                            'dropdown' => [
+                                'items' => $items,
+                                'options' => ['class' => 'dropdown-menu dropdown-menu-right'],
+                            ],
+                            'encodeLabel' => false,
+                        ]);
+                    },
+                ],
+                'headerOptions' => ['style' => 'width:140px'],
+            ],
+        ],
+    ]) ?>
+</div>
+
+<?php
+// Make entire row clickable, but ignore clicks on interactive controls (dropdown, links, inputs)
+$js = <<<JS
+document.addEventListener('click', function(e){
+  if (e.target.closest('.no-row-click, .dropdown-menu, a, button, input, select, label')) return;
+  const row = e.target.closest('.grid-row');
+  if (row && row.dataset.href) window.location = row.dataset.href;
+});
+JS;
+$this->registerJs($js);
+?>

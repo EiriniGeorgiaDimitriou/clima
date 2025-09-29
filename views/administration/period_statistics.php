@@ -41,6 +41,34 @@ $back_icon='<i class="fas fa-arrow-left"></i>';
             <th class="col-md-6 text-right" scope="col">Users</th>
             <td class="col-md-6 text-left" scope="col"><?= $usage['users'] ?></td>
         </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Total active projects (all categories)</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['active_projects'] ?? '0') ?></td>
+        </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Total projects (all categories)</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['total_projects'] ?? '0') ?></td>
+        </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Active VMs</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['active_vms'] ?? '0') ?></td>
+        </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Total VMs</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['total_vms'] ?? '0') ?></td>
+        </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Active users</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['active_users'] ?? '0') ?></td>
+        </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Inactive users</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['inactive_users'] ?? '0') ?></td>
+        </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Total users</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['total_users'] ?? '0') ?></td>
+        </tr>
         </tbody>
     </table>
 </div>
@@ -180,6 +208,10 @@ $back_icon='<i class="fas fa-arrow-left"></i>';
         <tr>
             <th class="col-md-6 text-right" scope="col">Total used storage (TB)</th>
             <td class="col-md-6 text-left" scope="col"><?= number_format($usage['total_storage_size'],2) ?> TB (<?= number_format($usage['size_storage_service'],2)?> TB for 24/7 service, <?= number_format($usage['size_storage_machines'],2)?> TB for compute machines)</td>
+        </tr>
+        <tr>
+            <th class="col-md-6 text-right" scope="col">Active Storage projects</th>
+            <td class="col-md-6 text-left" scope="col"><?= Html::encode($usage['active_storage_projects'] ?? '0') ?></td>
         </tr>
         </body>
     </table>

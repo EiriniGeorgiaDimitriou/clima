@@ -6,6 +6,7 @@ use app\models\AuthUser;
 use app\models\ActiveProjectSearch;
 use app\models\ExpiredProjectSearch;
 use app\models\ViewProjectSearch;
+use app\models\Vm;
 use Yii;
 use yii\base\DynamicModel;
 use yii\data\ActiveDataProvider;
@@ -887,7 +888,36 @@ class AdministrationController extends Controller
         $users=User::find()->where(['like','username','elixir-europe.org'])
             //->createCommand()->getRawSql();
             ->count();
+        $totalProjects  = Project::find()->count();
+        $activeProjects = Project::find()
+            ->where(['status' => 1])
+            ->count();
+        $active_storage_projects = Project::find()
+            ->where([
+                'status' => 1,
+                'project_type' => 2,
+            ])
+            ->count();
+        $activeVMs = Vm::find()
+            ->where(['active' => true])
+            ->andWhere(['deleted_at' => null])
+            ->count();
 
+// Total VMs = all not soft-deleted
+        $totalVMs = Vm::find()
+            ->where(['deleted_at' => null])
+            ->count();
+
+        $totalUsers    = User::find()->count();
+        $activeUsers = (new \yii\db\Query())
+            ->from('auth_user')
+            ->where(['>=', 'last_login', new \yii\db\Expression("NOW() - INTERVAL '180 days'")])
+            ->count('*', Yii::$app->db2);
+
+        $inactiveUsers = (new \yii\db\Query())
+            ->from('auth_user')
+            ->where(['<', 'last_login', new \yii\db\Expression("NOW() - INTERVAL '180 days'")])
+            ->count('*', Yii::$app->db2);
 //        $usage['o_jobs']=$schema['total_jobs'];
 //        $usage['o_time']=$schema['total_time'];
         $usage['users']=$users;
@@ -895,7 +925,14 @@ class AdministrationController extends Controller
         $metrics=Schema::getMetrics();
         $usage['task_executions'] = $metrics['num_of_executions'] ?? "n/a";
         $usage['running_tasks'] = $metrics['num_of_running_executions'] ?? "n/a";
-
+        $usage['active_vms'] = $activeVMs;
+        $usage['total_vms']  = $totalVMs;
+        $usage['total_projects']        = $totalProjects;
+        $usage['active_projects']        = $activeProjects;
+       $usage['active_users']          = $activeUsers;
+        $usage['inactive_users']        =  $inactiveUsers;
+        $usage['total_users']           =  $totalUsers;
+        $usage['active_storage_projects'] = $active_storage_projects;
         return $this->render('period_statistics',['usage'=>$usage]);
     }
 

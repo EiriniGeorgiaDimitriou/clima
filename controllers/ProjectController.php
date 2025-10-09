@@ -2694,13 +2694,13 @@ class ProjectController extends Controller
         $today          = new \DateTime('today');
 
 
-        $minAllowed = ($today > $currentEndDate) ? $today : $currentEndDate;
-        $maxAllowed = (clone $currentEndDate)->modify("+{$maxExtensionDays} days");
+        $minAllowed = $newEndDate;
+        $maxAllowed = (clone $newEndDate)->modify("+{$maxExtensionDays} days");
 
         $pickerStartDate = $minAllowed->format('Y-m-d');
         $pickerEndDate   = $maxAllowed->format('Y-m-d');
 
-        $diff          = $currentEndDate->diff($newEndDate);
+        $diff          = $newEndDate->diff($newEndDate);
         $extensionDays = $diff->days;
 
         if ( ($drequest->load(Yii::$app->request->post())) && ($prequest->load(Yii::$app->request->post())) )

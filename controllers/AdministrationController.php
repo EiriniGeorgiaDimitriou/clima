@@ -7,6 +7,7 @@ use app\models\ActiveProjectSearch;
 use app\models\ExpiredProjectSearch;
 use app\models\ViewProjectSearch;
 use app\models\Vm;
+use app\models\VmMachines;
 use Yii;
 use yii\base\DynamicModel;
 use yii\data\ActiveDataProvider;
@@ -885,28 +886,9 @@ class AdministrationController extends Controller
     {
 //        $schema=ProjectRequest::getSchemaPeriodUsage();
         $usage=ProjectRequest::getEgciPeriodUsage();
-        $users=User::find()->where(['like','username','elixir-europe.org'])
-            //->createCommand()->getRawSql();
-            ->count();
-        $totalProjects  = Project::find()->count();
-        $activeProjects = Project::find()
-            ->where(['status' => 1])
-            ->count();
-        $active_storage_projects = Project::find()
-            ->where([
-                'status' => 1,
-                'project_type' => 2,
-            ])
-            ->count();
-        $activeVMs = Vm::find()
-            ->where(['active' => true])
-            ->andWhere(['deleted_at' => null])
-            ->count();
-
-// Total VMs = all not soft-deleted
-        $totalVMs = Vm::find()
-            ->where(['deleted_at' => null])
-            ->count();
+        $users= (new \yii\db\Query())
+            ->from('auth_user')
+            ->count('*', Yii::$app->db2);
 
         $totalUsers    = User::find()->count();
         $activeUsers = (new \yii\db\Query())
@@ -918,21 +900,43 @@ class AdministrationController extends Controller
             ->from('auth_user')
             ->where(['<', 'last_login', new \yii\db\Expression("NOW() - INTERVAL '180 days'")])
             ->count('*', Yii::$app->db2);
+        $today = date('Y-m-d');
+        $exp = '-1';
+        $ptype = '-1';
+        $user = '';
+        $project = '';
+        $filters = [
+            'exp' => Yii::$app->request->post('expiry_date_t', $exp),
+            'user' => Yii::$app->request->post('username', $user),
+            'type' => Yii::$app->request->post('project_type', $ptype),
+            'name' => Yii::$app->request->post('project_name', $project)
+        ];
+        $all_projectsA = Project::getAllActiveProjectsAdm($filters['user'], $filters['type'], $filters['exp'], $filters['name']);
+        $activeProjects = count($all_projectsA);
+        $all_projectsIn = Project::getAllExpiredProjects($filters['user'], $filters['type'], $filters['exp'], $filters['name']);
+        $inactiveProjects = count($all_projectsIn);
+        $totalProjects = $activeProjects+$inactiveProjects;
+
+        $all_projectsStorage = Project::getAllActiveProjectsAdm($filters['user'], 2, $filters['exp'], $filters['name']);
+        $active_storage_projects = count($all_projectsStorage);
+
 //        $usage['o_jobs']=$schema['total_jobs'];
 //        $usage['o_time']=$schema['total_time'];
         $usage['users']=$users;
-
+        $activeVMs = $usage['vms_services_active']+$usage['vms_machines_active'];
+        $totalVMs= $usage['vms_services_total']+$usage['vms_machines_total'];
         $metrics=Schema::getMetrics();
         $usage['task_executions'] = $metrics['num_of_executions'] ?? "n/a";
         $usage['running_tasks'] = $metrics['num_of_running_executions'] ?? "n/a";
         $usage['active_vms'] = $activeVMs;
         $usage['total_vms']  = $totalVMs;
+        $usage['active_projects'] = $activeProjects;
         $usage['total_projects']        = $totalProjects;
-        $usage['active_projects']        = $activeProjects;
        $usage['active_users']          = $activeUsers;
         $usage['inactive_users']        =  $inactiveUsers;
         $usage['total_users']           =  $totalUsers;
         $usage['active_storage_projects'] = $active_storage_projects;
+
         return $this->render('period_statistics',['usage'=>$usage]);
     }
 

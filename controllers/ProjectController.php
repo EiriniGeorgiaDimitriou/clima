@@ -393,8 +393,7 @@ class ProjectController extends Controller
         $machineLimits=MachineComputeLimits::find()->where(['user_type'=>$role])->one();
         $machine_maximum_number=$machineLimits->number_of_projects;
         $number_of_user_projects=ProjectRequest::find()->where(['status'=>1,'project_type'=>3,'submitted_by'=>Userw::getCurrentUser()['id'],])->andWhere(['>=','end_date', date("Y-m-d")])->count();
-        $new_project_allowed=($number_of_user_projects-$machine_maximum_number < 0) ? true :false;
-        $new_project_allowed=($machine_maximum_number==-1)? true : false;
+        $new_project_allowed = ($machine_maximum_number == -1) || ($number_of_user_projects < $machine_maximum_number);
 
         if((!$new_project_allowed) && (!Userw::hasRole('Admin', $superadminAllowed=true)) && (!Userw::hasRole('Moderator', $superadminAllowed=true)))
         {
@@ -2685,10 +2684,25 @@ class ProjectController extends Controller
             } else {
                 $maxExtensionDays = 0;
             }
+
+
         }
+        $newEndDate = new \DateTime($prequest->end_date);
+        $newEndDate = new \DateTime($newEndDate->format('Y-m-d'));
+
+        $currentEndDate = new \DateTime($relatedProject->project_end_date);
+        $today          = new \DateTime('today');
 
 
-        print_r($project->project_end_date);
+        $minAllowed = $newEndDate;
+        $maxAllowed = (clone $newEndDate)->modify("+{$maxExtensionDays} days");
+
+        $pickerStartDate = $minAllowed->format('Y-m-d');
+        $pickerEndDate   = $maxAllowed->format('Y-m-d');
+
+        $diff          = $newEndDate->diff($newEndDate);
+        $extensionDays = $diff->days;
+
         if ( ($drequest->load(Yii::$app->request->post())) && ($prequest->load(Yii::$app->request->post())) )
         {
             if ($prType==4){
@@ -2740,20 +2754,36 @@ class ProjectController extends Controller
                 }
 
             }
-            $newEndDate = new DateTime($prequest->end_date);
-            $extensionDays = $currentEndDate->diff($newEndDate)->days;
 
-            if ($newEndDate > $currentEndDate && !Userw::hasRole('Admin', true) && !Userw::hasRole('Moderator', true)) {
-                if ($extensionDays > $maxExtensionDays) {
-                    Yii::$app->session->setFlash('danger', "The requested extension of $extensionDays days exceeds the maximum allowed of $maxExtensionDays days.");
+
+
+            if (!Userw::hasRole('Admin', true) && !Userw::hasRole('Moderator', true)) {
+
+
+                if ($newEndDate < $minAllowed) {
+                    Yii::$app->session->setFlash(
+                        'danger',
+                        "The new end date must be on or after ".$minAllowed->format('Y-m-d')."."
+                    );
                     $isValid = false;
                 }
 
+                if ($newEndDate > $maxAllowed) {
+                    Yii::$app->session->setFlash(
+                        'danger',
+                        "The requested extension of {$extensionDays} days exceeds the maximum allowed of {$maxExtensionDays} days (max date: ".$maxAllowed->format('Y-m-d').")."
+                    );
+                    $isValid = false;
+                }
                 if ($extension_count >= $max_extension) {
-                    Yii::$app->session->setFlash('danger', "You have reached the maximum number of extensions allowed ($max_extension).");
+                    Yii::$app->session->setFlash(
+                        'danger',
+                        "You have reached the maximum number of extensions allowed ({$max_extension})."
+                    );
                     $isValid = false;
                 }
             }
+
 
             if ($isValid)
             {
@@ -2917,6 +2947,8 @@ class ProjectController extends Controller
             'project' => $prequest,
             'maxExtensionDays' => $maxExtensionDays,
             'extension_count' => $extension_count,
+            'startDate' => $pickerStartDate,
+            'endDate'   => $pickerEndDate,
             'max_extension' => $max_extension,
             'trls' => $trls,
             'form_params' => $form_params,

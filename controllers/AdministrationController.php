@@ -6,6 +6,8 @@ use app\models\AuthUser;
 use app\models\ActiveProjectSearch;
 use app\models\ExpiredProjectSearch;
 use app\models\ViewProjectSearch;
+use app\models\Vm;
+use app\models\VmMachines;
 use Yii;
 use yii\base\DynamicModel;
 use yii\data\ActiveDataProvider;
@@ -884,17 +886,56 @@ class AdministrationController extends Controller
     {
 //        $schema=ProjectRequest::getSchemaPeriodUsage();
         $usage=ProjectRequest::getEgciPeriodUsage();
-        $users=User::find()->where(['like','username','elixir-europe.org'])
-            //->createCommand()->getRawSql();
-            ->count();
+        $users= (new \yii\db\Query())
+            ->from('auth_user')
+            ->count('*', Yii::$app->db2);
+
+        $totalUsers    = User::find()->count();
+        $activeUsers = (new \yii\db\Query())
+            ->from('auth_user')
+            ->where(['>=', 'last_login', new \yii\db\Expression("NOW() - INTERVAL '180 days'")])
+            ->count('*', Yii::$app->db2);
+
+        $inactiveUsers = (new \yii\db\Query())
+            ->from('auth_user')
+            ->where(['<', 'last_login', new \yii\db\Expression("NOW() - INTERVAL '180 days'")])
+            ->count('*', Yii::$app->db2);
+        $today = date('Y-m-d');
+        $exp = '-1';
+        $ptype = '-1';
+        $user = '';
+        $project = '';
+        $filters = [
+            'exp' => Yii::$app->request->post('expiry_date_t', $exp),
+            'user' => Yii::$app->request->post('username', $user),
+            'type' => Yii::$app->request->post('project_type', $ptype),
+            'name' => Yii::$app->request->post('project_name', $project)
+        ];
+        $all_projectsA = Project::getAllActiveProjectsAdm($filters['user'], $filters['type'], $filters['exp'], $filters['name']);
+        $activeProjects = count($all_projectsA);
+        $all_projectsIn = Project::getAllExpiredProjects($filters['user'], $filters['type'], $filters['exp'], $filters['name']);
+        $inactiveProjects = count($all_projectsIn);
+        $totalProjects = $activeProjects+$inactiveProjects;
+
+        $all_projectsStorage = Project::getAllActiveProjectsAdm($filters['user'], 2, $filters['exp'], $filters['name']);
+        $active_storage_projects = count($all_projectsStorage);
 
 //        $usage['o_jobs']=$schema['total_jobs'];
 //        $usage['o_time']=$schema['total_time'];
         $usage['users']=$users;
-
+        $activeVMs = $usage['vms_services_active']+$usage['vms_machines_active'];
+        $totalVMs= $usage['vms_services_total']+$usage['vms_machines_total'];
         $metrics=Schema::getMetrics();
         $usage['task_executions'] = $metrics['num_of_executions'] ?? "n/a";
         $usage['running_tasks'] = $metrics['num_of_running_executions'] ?? "n/a";
+        $usage['active_vms'] = $activeVMs;
+        $usage['total_vms']  = $totalVMs;
+        $usage['active_projects'] = $activeProjects;
+        $usage['total_projects']        = $totalProjects;
+       $usage['active_users']          = $activeUsers;
+        $usage['inactive_users']        =  $inactiveUsers;
+        $usage['total_users']           =  $totalUsers;
+        $usage['active_storage_projects'] = $active_storage_projects;
 
         return $this->render('period_statistics',['usage'=>$usage]);
     }
@@ -1378,10 +1419,8 @@ class AdministrationController extends Controller
 
             // boolean status used by the icon column
             $u['is_active'] = isset($inactiveSet[$u['username']]) ? 0 : 1;
-
-            // role type (bronze | silver | gold)
-            $u['user_type']       = strtolower(User::getRoleType($u['id']));
-
+            $uid = $u['id'] ?? $u['user_id'] ?? null;
+            $u['user_type'] = $uid ? User::getRoleTypeById((int)$uid) : '';
             // policy flag
             $u['policy_accepted'] = in_array($u['policy_accepted'], [1, '1', true, 't'], true) ? 1 : 0;
 

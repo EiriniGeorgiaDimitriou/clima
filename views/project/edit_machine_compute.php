@@ -49,8 +49,6 @@ Headers::begin() ?>
             <div style="margin-bottom: 20px;">
                 <?php
 
-                $startDate = date('Y-m-d'); // Current date
-                $endDate = date('Y-m-d', strtotime($project->end_date . " +$maxExtensionDays days"));
                 if ($isModerator){
                     echo '<label>Project end date *</label>';
                     echo DatePicker::widget([

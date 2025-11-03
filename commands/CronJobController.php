@@ -2,6 +2,8 @@
 namespace app\commands;
 
 
+use app\models\TicketBody;
+use app\models\TicketHead;
 use app\models\Token;
 use Yii;
 use yii\console\ExitCode;
@@ -136,7 +138,7 @@ class CronJobController extends Controller
         $this->actionTokenNotify(date("Y-m-d", strtotime("-1 days")), date("Y-m-d", strtotime("-1 days")));
         $this->actionInactiveUsersNotify(date("Y-m-d", strtotime("-1 days")), date("Y-m-d", strtotime("-1 days")));
         $this->actionPostExpiryResourceNotify(date("Y-m-d", strtotime("-1 days")), date("Y-m-d", strtotime("-1 days")));
-
+        $this->actionTicketNotify(date("Y-m-d", strtotime("-1 days")), date("Y-m-d", strtotime("-1 days")));
         return Controller::EXIT_CODE_NORMAL;
     }
 
@@ -449,4 +451,62 @@ class CronJobController extends Controller
         $command->finish();
         return Controller::EXIT_CODE_NORMAL;
     }
+
+    public function actionTicketNotify($from, $to)
+    {
+        $dates   = CronJob::getDateRange($from, $to);
+        $command = CronJob::run($this->id, $this->action->id, 0, CronJob::countDateRange($dates));
+
+        if ($command === false) {
+            return Controller::EXIT_CODE_ERROR;
+        }
+
+        foreach ($dates as $date) {
+            // TicketBody->date is stored as datetime string, so we filter by day
+            $start = $date . ' 00:00:00';
+            $end   = $date . ' 23:59:59';
+
+            // we want ONLY messages that are NOT from admin → client != 1
+            // (new ticket or user reply)
+            $userMessages = TicketBody::find()
+                ->where(['between', 'date', $start, $end])
+                ->andWhere(['<>', 'client', TicketBody::ADMIN]) // client != 1
+                ->all();
+
+            foreach ($userMessages as $body) {
+                /** @var TicketBody $body */
+                $head = TicketHead::findOne($body->id_head);
+                if (!$head) {
+                    continue;
+                }
+
+                // ticket info
+                $ticketId    = $head->id;
+                $ticketTopic = $head->topic ?: '(no subject)';
+                $username    = $body->name_user ?: 'unknown user';
+                echo "Sending admin email for ticket #{$ticketId} from {$username}\n";
+                // Build email text for admins
+                $msg = "A user has created or replied to a ticket.\n"
+                    . "User: {$username}\n"
+                    . "Ticket ID: {$ticketId}\n"
+                    . "Subject: {$ticketTopic}\n"
+                    . "Date: {$body->date}\n"
+                    . "Please check the ticket in the admin panel.";
+
+                // reuse your existing admin-email mechanism
+                // type name is up to you; let's call it 'ticket_user_message'
+                EmailEventsAdmin::notifyByEmailDate(
+                    'ticket_user_message',  // define/allow this type in your EmailEventsAdmin table
+                    null,                   // no project_id here
+                    $msg,
+                    (string)$date
+                );
+            }
+        }
+
+
+        $command->finish();
+        return Controller::EXIT_CODE_NORMAL;
+    }
+
 }

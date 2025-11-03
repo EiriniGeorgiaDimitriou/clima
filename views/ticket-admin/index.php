@@ -9,28 +9,12 @@ use yii\helpers\Url;
 /** @var yii\data\ActiveDataProvider $dataProvider */
 /** @var app\models\TicketHeadSearch $searchModel */
 
-$statusFilter = [
-    TicketHead::OPEN   => 'Open',
-    TicketHead::WAIT   => 'Waiting',
-    TicketHead::ANSWER => 'Answered',
-    TicketHead::CLOSED => 'Closed',
-];
-
-
-$badgeMap = [
-    TicketHead::OPEN   => ['text' => 'Open',     'class' => 'badge-open'],
-    TicketHead::WAIT   => ['text' => 'Waiting',  'class' => 'badge-waiting'],
-    TicketHead::ANSWER => ['text' => 'Answered', 'class' => 'badge-answered'],
-    TicketHead::CLOSED => ['text' => 'Closed',   'class' => 'badge-closed'],
-    TicketHead::VIEWED => ['text' => 'Unknown',   'class' => 'badge-unknown'],
-];
+// --- Styles like your new layout ---
 $this->registerCss(<<<CSS
-.badge-open     { background:#007bff !important; color:#fff !important; } /* blue */
-.badge-waiting  { background:#fd7e14 !important; color:#fff !important; } /* orange */
-.badge-answered { background:#28a745 !important; color:#fff !important; } /* green */
-.badge-closed   { background:#dc3545 !important; color:#fff !important; } /* red */
-.badge-unknown  { background:#ffc107 !important; color:#ffff !important; } /* yellow */
-.badge-pill { border-radius:10rem; padding:.35em .6em; font-weight:600; }
+.badge-user    { background:#28a745 !important; color:#fff !important; }   /* User */
+.badge-admin   { background:#007bff !important; color:#fff !important; }   /* Administrator */
+.badge-closed  { background:#6c757d !important; color:#fff !important; }   /* Closed */
+.badge-pill    { border-radius:10rem; padding:.35em .6em; font-weight:600; }
 CSS);
 ?>
 <div class="panel page-block">
@@ -48,11 +32,10 @@ CSS);
         'rowOptions' => static function ($model) {
             return [
                 'data-href' => Url::to(['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'id' => $model->id, 'mode' => 1]),
-                'class' => 'grid-row',
-                'style' => 'cursor:pointer', // no background color
+                'class'     => 'grid-row',
+                'style'     => 'cursor:pointer',
             ];
         },
-
         'columns' => [
             [
                 'attribute' => 'username',
@@ -62,17 +45,17 @@ CSS);
                     $u = $m->userName ? $m->userName->username : '';
                     return Html::tag('strong', Html::encode(explode('@', (string)$u)[0]));
                 },
-                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
+                'filterInputOptions' => ['class' => 'form-control'],
             ],
             [
                 'attribute' => 'department',
                 'label'     => 'Ticket category',
-                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
+                'filterInputOptions' => ['class' => 'form-control'],
             ],
             [
                 'attribute' => 'topic',
                 'label'     => 'Ticket subject',
-                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
+                'filterInputOptions' => ['class' => 'form-control'],
             ],
             [
                 'label' => 'No of answers',
@@ -86,7 +69,7 @@ CSS);
 
                     $answers = 0;
                     foreach ($tickets as $t) {
-                        if ((int)$t['client'] === 1) { // Administrator
+                        if ((int)$t['client'] === 1) { // Administrator replies
                             $answers++;
                         }
                     }
@@ -103,14 +86,25 @@ CSS);
                 'attribute' => 'status',
                 'label'     => 'Status',
                 'format'    => 'raw',
-                'value'     => function ($model) use ($badgeMap) {
-                    $s = is_numeric($model->status) ? (int)$model->status : null;
-                    $conf = $badgeMap[$s] ?? ['text' => 'Unknown', 'class' => 'badge-unknown']; // <- yellow fallback
-                    return \yii\helpers\Html::tag('span', $conf['text'], [
-                        'class' => 'badge badge-pill ' . $conf['class'],
-                    ]);
+                'value'     => static function ($model) {
+                    // Old logic for who replied + closed badge
+                    $parts = [];
+                    if (isset($model->body['client'])) {
+                        if ((int)$model->body['client'] === 0) {
+                            $parts[] = Html::tag('span', 'User', ['class' => 'badge badge-pill badge-user']);
+                        } elseif ((int)$model->body['client'] === 1) {
+                            $parts[] = Html::tag('span', 'Administrator', ['class' => 'badge badge-pill badge-admin']);
+                        }
+                    }
+                    if ((int)$model->status === TicketHead::CLOSED) {
+                        $parts[] = Html::tag('span', 'Closed', ['class' => 'badge badge-pill badge-closed']);
+                    }
+                    if (empty($parts)) {
+                        $parts[] = Html::tag('span', 'Unknown', ['class' => 'badge badge-pill badge-closed']);
+                    }
+                    return implode('&nbsp;', $parts);
                 },
-                'filter' => \yii\helpers\Html::activeDropDownList(
+                'filter' => Html::activeDropDownList(
                     $searchModel,
                     'status',
                     [
@@ -118,29 +112,24 @@ CSS);
                         TicketHead::WAIT   => 'Waiting',
                         TicketHead::ANSWER => 'Answered',
                         TicketHead::CLOSED => 'Closed',
-                        TicketHead::VIEWED => 'Unknown',
                     ],
                     ['class' => 'form-control', 'prompt' => '']
                 ),
                 'contentOptions' => ['class' => 'text-center'],
-                'headerOptions'  => ['style' => 'width:160px'],
+                'headerOptions'  => ['style' => 'width:180px'],
             ],
-
-
-
-
             [
                 'attribute' => 'date_update',
                 'label'     => 'Last updated',
                 'format'    => ['datetime', 'php:Y-m-d H:i'],
-                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => ''],
-                'headerOptions' => ['style' => 'width:180px'],
+                'filterInputOptions' => ['class' => 'form-control'],
+                'headerOptions'  => ['style' => 'width:180px'],
                 'contentOptions' => ['class' => 'text-center'],
             ],
             [
                 'class' => 'yii\grid\ActionColumn',
                 'template' => '{actions}',
-                'header' => 'Actions',
+                'header'   => 'Actions',
                 'contentOptions' => ['class' => 'text-center'],
                 'buttons' => [
                     'actions' => static function ($url, $model) {
@@ -155,34 +144,29 @@ CSS);
                                 'url'   => ['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'mode' => 0, 'id' => $model->id],
                                 'linkOptions' => ['class' => 'dropdown-item no-row-click'],
                             ],
-                        ];
-
-                        if ((int)$model->status === TicketHead::CLOSED) {
-                            $items[] = [
-                                'label' => 'Re-open',
-                                'url'   => ['ticket-admin/reopen', 'id' => $model->id],
-                                'linkOptions' => [
-                                    'class' => 'dropdown-item text-warning no-row-click',
-                                    'data-confirm' => 'Are you sure you want to re-open the ticket?',
-                                ],
-                            ];
-                        } else {
-                            $items[] = [
+                            [
                                 'label' => 'Close',
                                 'url'   => ['ticket-admin/closed', 'id' => $model->id],
                                 'linkOptions' => [
                                     'class' => 'dropdown-item no-row-click',
                                     'data-confirm' => 'Are you sure you want to close the ticket?',
                                 ],
-                            ];
-                        }
-
-                        $items[] = [
-                            'label' => 'Delete',
-                            'url'   => ['ticket-admin/delete', 'id' => $model->id],
-                            'linkOptions' => [
-                                'class' => 'dropdown-item text-danger no-row-click',
-                                'data-confirm' => 'Are you sure you want to delete the ticket?',
+                            ],
+                            [
+                                'label' => 'Re-open',
+                                'url'   => ['ticket-admin/reopen', 'id' => $model->id],
+                                'linkOptions' => [
+                                    'class' => 'dropdown-item text-warning no-row-click',
+                                    'data-confirm' => 'Are you sure you want to re-open the ticket?',
+                                ],
+                            ],
+                            [
+                                'label' => 'Delete',
+                                'url'   => ['ticket-admin/delete', 'id' => $model->id],
+                                'linkOptions' => [
+                                    'class' => 'dropdown-item text-danger no-row-click',
+                                    'data-confirm' => 'Are you sure you want to delete the ticket?',
+                                ],
                             ],
                         ];
 
@@ -204,7 +188,7 @@ CSS);
 </div>
 
 <?php
-// Make entire row clickable, but ignore clicks on interactive controls (dropdown, links, inputs)
+// Keep the “clickable row” JS
 $js = <<<JS
 document.addEventListener('click', function(e){
   if (e.target.closest('.no-row-click, .dropdown-menu, a, button, input, select, label')) return;

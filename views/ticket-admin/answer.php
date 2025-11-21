@@ -8,17 +8,77 @@ use yii\helpers\Url;
 
 <div class="panel page-block">
     <div class="container-fluid row">
-        <div class="col-md-1 col-md-offset-11">
-            <!-- <a class="btn btn-default" href="<?= \yii\helpers\Url::toRoute(['/ticket-admin/index']) ?>" -->
-            <a class="btn btn-default" href="<?= $url ?>"
-               style="margin-bottom: 10px">Back</a>
-        </div>   
-        <div class="col-lg-12">
+
+        <div class="col-md-12 clearfix">
+
+            <!-- Right: Answer + Close/Re-open + Delete -->
+            <div class="pull-right">
+
+                <!-- Answer button -->
+                <?php if ($mode == 0): ?>
+                    <!-- Already in answer mode: trigger collapse -->
+                    <a class="btn btn-primary"
+                       role="button"
+                       data-toggle="collapse"
+                       href="#collapseExample"
+                       aria-expanded="false"
+                       aria-controls="collapseExample">
+                        <i class="glyphicon glyphicon-pencil"></i>
+                        Write answer
+                    </a>
+                <?php else: ?>
+                    <!-- Not in answer mode: go to answer with mode=0 -->
+                    <?= Html::a(
+                        '<i class="glyphicon glyphicon-pencil"></i> Answer',
+                        ['ticket-admin/answer', 'id' => $ticketHead->id, 'mode' => 0, 'url1' => $url],
+                        ['class' => 'btn btn-primary', 'encode' => false]
+                    ) ?>
+                <?php endif; ?>
+
+                <!-- Close / Re-open -->
+                <?php if ((int)$ticketHead->status === \app\models\TicketHead::CLOSED): ?>
+                    <?= Html::a(
+                        'Re-open',
+                        ['ticket-admin/reopen', 'id' => $ticketHead->id],
+                        [
+                            'class' => 'btn btn-warning',
+                            'data-confirm' => 'Are you sure you want to re-open this ticket?',
+                        ]
+                    ) ?>
+                <?php else: ?>
+                    <?= Html::a(
+                        'Close',
+                        ['ticket-admin/closed', 'id' => $ticketHead->id],
+                        [
+                            'class' => 'btn btn-dark',
+                            'data-confirm' => 'Are you sure you want to close this ticket?',
+                        ]
+                    ) ?>
+                <?php endif; ?>
+
+                <!-- Delete -->
+                <?= Html::a(
+                    'Delete',
+                    ['ticket-admin/delete', 'id' => $ticketHead->id],
+                    [
+                        'class' => 'btn btn-danger',
+                        'data-confirm' => 'Are you sure you want to delete this ticket?',
+                    ]
+                ) ?>
+                <!-- Back -->
+                <?= Html::a(
+                    'Back',
+                    ['ticket-admin/index', 'id' => $ticketHead->id],
+                    [
+                        'class' => 'btn btn-default',
+                    ]
+                ) ?>
+
+            </div>
+        </div>
+
+            <div class="col-lg-12">
         <?php if ($mode == 0) { ?>
-            <a class="btn btn-primary" style="width: 100%" role="button" data-toggle="collapse" href="#collapseExample"
-               aria-expanded="false" aria-controls="collapseExample">
-                <i class="glyphicon glyphicon-pencil pull-left"></i><span>Write answer</span>
-            </a>
             <div class="collapse" id="collapseExample">
                 <div class="well">
                     <?php $form = \yii\widgets\ActiveForm::begin() ?>
@@ -32,6 +92,7 @@ use yii\helpers\Url;
                 </div>
             </div>
             <?php } ?>
+
             <div class="clearfix" style="margin-bottom: 20px"></div>
             <?php foreach ($thisTicket as $ticket) : ?>
                 <div class="panel panel-primary">

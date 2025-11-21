@@ -10,19 +10,30 @@ class TicketHeadSearch extends Model
     public $department;
     public $topic;
     public $status;
+    public $answersCount;
 
     public function rules()
     {
         return [
             [['username', 'department', 'topic'], 'safe'],
-            [['status'], 'integer'],
+            [['answersCount','status'], 'integer'],
         ];
     }
 
     public function search($params)
     {
-        $query = TicketHead::find()->joinWith(['userName u']); // alias 'u' for user
-
+        //$query = TicketHead::find()->joinWith(['userName u']); // alias 'u' for user
+        $answersSubquery = TicketBody::find()
+            ->select([
+                'id_head',
+                // pure "admin replies" count:
+                'answersCount' => 'SUM(CASE WHEN client = 1 THEN 1 ELSE 0 END)',
+            ])
+            ->groupBy('id_head');
+        $query = TicketHead::find()
+            ->alias('th')
+            ->joinWith(['userName u']) // existing join for username
+            ->leftJoin(['ab' => $answersSubquery], 'ab.id_head = th.id');
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => ['pageSize' => TicketConfig::pageSize],
@@ -38,6 +49,12 @@ class TicketHeadSearch extends Model
                         'asc'  => ['u.username' => SORT_ASC],
                         'desc' => ['u.username' => SORT_DESC],
                     ],
+                    'answersCount' => [
+                        'asc'  => ['answersCount' => SORT_ASC],
+                        'desc' => ['answersCount' => SORT_DESC],
+                        'default' => SORT_DESC,
+                        'label' => 'No of answers',
+                    ],
                 ],
             ],
         ]);
@@ -50,13 +67,14 @@ class TicketHeadSearch extends Model
 
         // filters
         $query->andFilterWhere(['like', 'u.username', $this->username])
-            ->andFilterWhere(['like', 'ticket_head.department', $this->department])
+            ->andFilterWhere(['th.status' => $this->status])
             ->andFilterWhere(['like', 'ticket_head.topic', $this->topic]);
-
-        if ($this->status !== null && $this->status !== '') {
-            $query->andWhere(['ticket_head.status' => (int)$this->status]);
+        if ($this->answersCount !== null && $this->answersCount !== '') {
+            $query->andWhere(['answersCount' => $this->answersCount]);
         }
-
+        if ($this->status !== null && $this->status !== '') {
+            $query->andFilterWhere(['ticket_head.status' => $this->status]);
+        }
         return $dataProvider;
     }
 }

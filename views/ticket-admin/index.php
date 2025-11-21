@@ -31,7 +31,7 @@ CSS);
         'summary'      => 'Showing <b>{begin}-{end}</b> of <b>{totalCount}</b> items.',
         'rowOptions' => static function ($model) {
             return [
-                'data-href' => Url::to(['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'id' => $model->id, 'mode' => 1]),
+                'data-href' => Url::to(['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'id' => $model->id, 'mode' => 0]),
                 'class'     => 'grid-row',
                 'style'     => 'cursor:pointer',
             ];
@@ -58,6 +58,7 @@ CSS);
                 'filterInputOptions' => ['class' => 'form-control'],
             ],
             [
+                'attribute' => 'answersCount',
                 'label' => 'No of answers',
                 'value' => static function ($model) {
                     $tickets = TicketBody::find()
@@ -80,7 +81,7 @@ CSS);
                 },
                 'contentOptions' => ['class' => 'text-center'],
                 'headerOptions'  => ['style' => 'width:140px'],
-                'filter'         => false,
+                'filterInputOptions' => ['class' => 'form-control'],
             ],
             [
                 'attribute' => 'status',
@@ -104,17 +105,6 @@ CSS);
                     }
                     return implode('&nbsp;', $parts);
                 },
-                'filter' => Html::activeDropDownList(
-                    $searchModel,
-                    'status',
-                    [
-                        TicketHead::OPEN   => 'Open',
-                        TicketHead::WAIT   => 'Waiting',
-                        TicketHead::ANSWER => 'Answered',
-                        TicketHead::CLOSED => 'Closed',
-                    ],
-                    ['class' => 'form-control', 'prompt' => '']
-                ),
                 'contentOptions' => ['class' => 'text-center'],
                 'headerOptions'  => ['style' => 'width:180px'],
             ],
@@ -126,63 +116,29 @@ CSS);
                 'headerOptions'  => ['style' => 'width:180px'],
                 'contentOptions' => ['class' => 'text-center'],
             ],
-            [
-                'class' => 'yii\grid\ActionColumn',
-                'template' => '{actions}',
-                'header'   => 'Actions',
-                'contentOptions' => ['class' => 'text-center'],
-                'buttons' => [
-                    'actions' => static function ($url, $model) {
-                        $items = [
-                            [
-                                'label' => 'View',
-                                'url'   => ['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'id' => $model->id, 'mode' => 1],
-                                'linkOptions' => ['class' => 'dropdown-item no-row-click'],
-                            ],
-                            [
-                                'label' => 'Answer',
-                                'url'   => ['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'mode' => 0, 'id' => $model->id],
-                                'linkOptions' => ['class' => 'dropdown-item no-row-click'],
-                            ],
-                            [
-                                'label' => 'Close',
-                                'url'   => ['ticket-admin/closed', 'id' => $model->id],
-                                'linkOptions' => [
-                                    'class' => 'dropdown-item no-row-click',
-                                    'data-confirm' => 'Are you sure you want to close the ticket?',
-                                ],
-                            ],
-                            [
-                                'label' => 'Re-open',
-                                'url'   => ['ticket-admin/reopen', 'id' => $model->id],
-                                'linkOptions' => [
-                                    'class' => 'dropdown-item text-warning no-row-click',
-                                    'data-confirm' => 'Are you sure you want to re-open the ticket?',
-                                ],
-                            ],
-                            [
-                                'label' => 'Delete',
-                                'url'   => ['ticket-admin/delete', 'id' => $model->id],
-                                'linkOptions' => [
-                                    'class' => 'dropdown-item text-danger no-row-click',
-                                    'data-confirm' => 'Are you sure you want to delete the ticket?',
-                                ],
-                            ],
-                        ];
+//            [
+//                'class' => 'yii\grid\ActionColumn',
+//                'header' => 'Actions',
+//                'headerOptions' => ['style' => 'width:140px'],
+//                'contentOptions' => ['class' => 'text-center'],
+//
+//                // template must include the name "answer"
+//                'template' => '{answer}',
+//
+//                'buttons' => [
+//                    'answer' => function ($url, $model) {
+//                        return Html::a(
+//                            'Answer',
+//                            ['ticket-admin/answer', 'url1' => $_SERVER['REQUEST_URI'], 'mode' => 0, 'id' => $model->id],
+//                            [
+//                                'class' => 'btn btn-sm btn-primary no-row-click', // ← visible button
+//                                'title' => 'Answer this ticket',
+//                            ]
+//                        );
+//                    },
+//                ],
+//            ],
 
-                        return ButtonDropdown::widget([
-                            'label' => 'Actions',
-                            'options' => ['class' => 'btn btn-sm btn-outline-primary no-row-click'],
-                            'dropdown' => [
-                                'items' => $items,
-                                'options' => ['class' => 'dropdown-menu dropdown-menu-right'],
-                            ],
-                            'encodeLabel' => false,
-                        ]);
-                    },
-                ],
-                'headerOptions' => ['style' => 'width:140px'],
-            ],
         ],
     ]) ?>
 </div>

@@ -3,7 +3,7 @@
 use yii\db\Migration;
 
 /**
- * Class m241021_063651_insert_user
+ * Class m241021_063651_insert_user_
  */
 class m241021_063651_insert_user extends Migration
 {

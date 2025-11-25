@@ -1345,12 +1345,12 @@ class AdministrationController extends Controller
             throw new \yii\web\MethodNotAllowedHttpException('Method Not Allowed. Use POST.');
         }
 
-        $prequest = ProjectRequest::findOne(['project_id' => $id]);
-        if (!$prequest) {
+        $project = Project::findOne($id);
+        if (!$project) {
             Yii::$app->session->setFlash('danger', "Project not found.");
             return $this->redirect(['administration/all-projects']);
         }
-
+        $prequest = ProjectRequest::findOne($project->latest_project_request_id);
         $prequest->reactivate();
 
         if (!empty($prequest->errors)) {

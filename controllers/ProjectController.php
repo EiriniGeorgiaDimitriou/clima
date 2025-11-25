@@ -1057,12 +1057,15 @@ class ProjectController extends Controller
         {
             $ends= explode(' ', $project_request->end_date)[0];
         }
+
         $now=date('Y-m-d');
-        $end = date('Y-m-d', strtotime($project_request->end_date));
+        $end = date('Y-m-d', strtotime($project->project_end_date));
+
         $datetime1 = strtotime($now);
 
-        $datetime2 = strtotime($ends);
+        $datetime2 = strtotime($end);
         $secs = $datetime2 - $datetime1;
+
         $remaining_time = $secs / 86400;
         if($remaining_time<=0)
         {
@@ -1071,7 +1074,6 @@ class ProjectController extends Controller
 
         $usage=[];
         $remaining_jobs=0;
-
 
         $resourcesStats=[];
 
@@ -1540,7 +1542,7 @@ class ProjectController extends Controller
 
         $number_of_users=count($users);
 
-        $expired=0;
+        $expired=Yii::$app->request->get('expired');
 
         return $this->render($view_file,['project'=>$project_request,'details'=>$details, 'return'=>$return,
             'filter'=>$filter,'usage'=>$usage,'user_list'=>$username_list, 'submitted'=>$submitted,'request_id'=>$id, 'type'=>$type, 'ends'=>$ends, 'start'=>$start, 'remaining_time'=>$remaining_time, 'vm_flavour'=>$vm_flavour,

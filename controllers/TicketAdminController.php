@@ -63,11 +63,15 @@ class TicketAdminController extends Controller
      */
     public function actionIndex()
     {
-        $dataProvider = (new TicketHead())->dataProviderAdmin();
-        Url::remember();
+        $searchModel  = new \app\models\TicketHeadSearch();
+        $dataProvider = $searchModel->search(\Yii::$app->request->queryParams);
 
-        return $this->render('index', ['dataProvider' => $dataProvider]);
+        return $this->render('index', [
+            'searchModel'  => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
     }
+
 
     /**
      * Функция вытаскивает данные тикета по id и отображает данные
